@@ -24,6 +24,8 @@ interface EventInputProps {
   walkPassFail?: { threshold: number; passed: boolean | null } | null;
   hamrLevel?: { level: number; shuttle: number; totalInLevel: number } | null;
   paceInfo?: { perMile: string } | null;
+  locked?: boolean;
+  onToggleLock?: () => void;
 }
 
 function TimeInput({
@@ -98,6 +100,8 @@ export function EventInput({
   walkPassFail,
   hamrLevel,
   paceInfo,
+  locked,
+  onToggleLock,
 }: EventInputProps) {
   const [touched, setTouched] = useState(false);
   const [rawInput, setRawInput] = useState(() => (value > 0 ? String(value) : ''));
@@ -112,9 +116,22 @@ export function EventInput({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>
-        {sectionLabel} ({maxPts} PTS)
-      </Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.label}>
+          {sectionLabel} ({maxPts} PTS)
+        </Text>
+        {onToggleLock && (
+          <TouchableOpacity
+            style={[styles.lockBtn, locked && styles.lockBtnActive]}
+            onPress={onToggleLock}
+            accessibilityLabel={locked ? 'Unlock score' : 'Lock score'}
+          >
+            <Text style={[styles.lockBtnText, locked && styles.lockBtnTextActive]}>
+              {locked ? '🔒 Locked' : '🔒 Lock'}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {options && options.length > 1 && (
         <View style={styles.toggleGroup}>
@@ -256,13 +273,40 @@ export function EventInput({
 
 const styles = StyleSheet.create({
   container: { marginBottom: 16 },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    gap: 8,
+  },
   label: {
     color: colors.textMuted,
     fontWeight: '500',
     textTransform: 'uppercase',
     fontSize: 12,
     letterSpacing: 0.5,
-    marginBottom: 8,
+    flex: 1,
+  },
+  lockBtn: {
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+  lockBtnActive: {
+    backgroundColor: 'rgba(56,189,248,0.18)',
+    borderColor: colors.accentBlue,
+  },
+  lockBtnText: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  lockBtnTextActive: {
+    color: colors.accentBlue,
   },
   toggleGroup: {
     flexDirection: 'row',

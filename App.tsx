@@ -70,6 +70,12 @@ export default function App() {
   const [coreType, setCoreType] = useState('situp');
   const [coreValue, setCoreValue] = useState(DEFAULT_VALUES.situp);
 
+  // Lock state for goal planning — when locked, the event is treated as a
+  // fixed contributor to the total so GoalLookup can solve only for the rest.
+  const [lockedCardio, setLockedCardio] = useState(false);
+  const [lockedStrength, setLockedStrength] = useState(false);
+  const [lockedCore, setLockedCore] = useState(false);
+
   const colIdx = useMemo(() => getColIdx(ageGroup, gender), [ageGroup, gender]);
 
   const whtrScore = useMemo(() => {
@@ -246,6 +252,12 @@ export default function App() {
             strengthType={strengthType}
             coreType={coreType}
             whtrScore={whtrScore}
+            cardioScore={cardioScore}
+            strengthScore={strengthScore}
+            coreScore={coreScore}
+            lockedCardio={lockedCardio}
+            lockedStrength={lockedStrength}
+            lockedCore={lockedCore}
           />
 
           <EventInput
@@ -264,6 +276,10 @@ export default function App() {
             walkPassFail={walkPassFail}
             hamrLevel={hamrLevel}
             paceInfo={runPace}
+            locked={cardioType !== 'walk' ? lockedCardio : undefined}
+            onToggleLock={
+              cardioType !== 'walk' ? () => setLockedCardio((v) => !v) : undefined
+            }
           />
           {cardioType === 'hamr' && <HamrPlayer />}
           {cardioType === 'run' && (
@@ -283,6 +299,8 @@ export default function App() {
             thresholds={strengthThresholds}
             valueType={strengthType}
             score={strengthScore}
+            locked={lockedStrength}
+            onToggleLock={() => setLockedStrength((v) => !v)}
           />
 
           <EventInput
@@ -298,6 +316,8 @@ export default function App() {
             thresholds={coreThresholds}
             valueType={coreType}
             score={coreScore}
+            locked={lockedCore}
+            onToggleLock={() => setLockedCore((v) => !v)}
           />
         </View>
 
