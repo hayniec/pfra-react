@@ -1,33 +1,76 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Audio } from 'expo-av';
 import { HAMR_LEVELS, getHamrIntervalMs } from '../scoring';
 import { colors } from '../theme';
 
 type PlayerStatus = 'idle' | 'running' | 'done';
 
+const BEEP = require('../../assets/sounds/beep.wav');
+const BEEP_LEVEL = require('../../assets/sounds/beep-level.wav');
+
 export function HamrPlayer() {
   const [status, setStatus] = useState<PlayerStatus>('idle');
   const [display, setDisplay] = useState({ level: 1, shuttle: 1, total: 0 });
+  const [levelFlash, setLevelFlash] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stateRef = useRef({ levelIdx: 0, shuttle: 1, total: 0, active: false });
   const tickFnRef = useRef<() => void>(() => {});
 
+  const beepSoundRef = useRef<Audio.Sound | null>(null);
+  const levelSoundRef = useRef<Audio.Sound | null>(null);
+
+  const flashAnim = useRef(new Animated.Value(0)).current;
+
+  // Load sounds once and set audio mode for foreground playback
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+        });
+        const beep = await Audio.Sound.createAsync(BEEP, { volume: 1.0 });
+        const levelBeep = await Audio.Sound.createAsync(BEEP_LEVEL, { volume: 1.0 });
+        if (mounted) {
+          beepSoundRef.current = beep.sound;
+          levelSoundRef.current = levelBeep.sound;
+        } else {
+          beep.sound.unloadAsync().catch(() => {});
+          levelBeep.sound.unloadAsync().catch(() => {});
+        }
+      } catch {
+        // Audio unavailable — silent fallback
+      }
+    })();
+    return () => {
+      mounted = false;
+      beepSoundRef.current?.unloadAsync().catch(() => {});
+      levelSoundRef.current?.unloadAsync().catch(() => {});
+    };
+  }, []);
+
   const playBeep = async (isLevelEnd: boolean) => {
+    const sound = isLevelEnd ? levelSoundRef.current : beepSoundRef.current;
+    if (!sound) return;
     try {
-      const { sound } = await Audio.Sound.createAsync(
-        // Use a short sine wave beep via generated silence placeholder
-        // We'll use the Expo Audio API with a frequency approach
-        undefined as any,
-        { shouldPlay: false }
-      );
-      // Fallback: we generate beeps differently in RN
-      // For now, use a simple approach
-      sound.unloadAsync().catch(() => {});
+      await sound.setPositionAsync(0);
+      await sound.playAsync();
     } catch {
-      // Audio not available — silent fallback
+      // ignore
     }
+  };
+
+  const triggerLevelFlash = () => {
+    setLevelFlash(true);
+    flashAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(flashAnim, { toValue: 1, duration: 200, useNativeDriver: false }),
+      Animated.timing(flashAnim, { toValue: 0, duration: 1400, useNativeDriver: false }),
+    ]).start(() => setLevelFlash(false));
   };
 
   tickFnRef.current = () => {
@@ -38,7 +81,6 @@ export function HamrPlayer() {
     const shuttlesInLevel = lvl.end - lvl.start + 1;
     const isLevelEnd = s.shuttle >= shuttlesInLevel;
 
-    // Beep (best-effort)
     playBeep(isLevelEnd);
     s.total++;
 
@@ -52,13 +94,14 @@ export function HamrPlayer() {
       }
       s.levelIdx = next;
       s.shuttle = 1;
+      triggerLevelFlash();
     } else {
       s.shuttle++;
     }
 
     setDisplay({ level: s.levelIdx + 1, shuttle: s.shuttle, total: s.total });
 
-    const extra = isLevelEnd ? 350 : 0;
+    const extra = isLevelEnd ? 1000 : 0;
     timerRef.current = setTimeout(tickFnRef.current, getHamrIntervalMs(s.levelIdx) + extra);
   };
 
@@ -98,8 +141,13 @@ export function HamrPlayer() {
         1
       : 0;
 
+  const flashBg = flashAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(10,49,97,0.25)', 'rgba(56,189,248,0.55)'],
+  });
+
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { backgroundColor: flashBg }]}>
       <View style={styles.header}>
         <Text style={styles.title}>HAMR Beep Timer</Text>
         {status === 'running' && (
@@ -109,11 +157,19 @@ export function HamrPlayer() {
         )}
       </View>
 
+      {levelFlash && (
+        <View style={styles.levelUpBanner}>
+          <Text style={styles.levelUpText}>▲ LEVEL {display.level}</Text>
+        </View>
+      )}
+
       {(status === 'running' || status === 'done') && (
         <View style={styles.stats}>
-          <View style={styles.stat}>
+          <View style={[styles.stat, levelFlash && styles.statHighlight]}>
             <Text style={styles.statLabel}>Level</Text>
-            <Text style={styles.statVal}>{display.level}</Text>
+            <Text style={[styles.statVal, levelFlash && styles.statValHighlight]}>
+              {display.level}
+            </Text>
           </View>
           <View style={styles.stat}>
             <Text style={styles.statLabel}>Shuttle</Text>
@@ -153,14 +209,13 @@ export function HamrPlayer() {
       </View>
 
       <Text style={styles.hint}>Single beep = run to far end · Triple beep = level up</Text>
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     marginTop: 12,
-    backgroundColor: 'rgba(10,49,97,0.25)',
     borderWidth: 1,
     borderColor: 'rgba(56,189,248,0.2)',
     borderRadius: 10,
@@ -191,6 +246,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     letterSpacing: 0.5,
   },
+  levelUpBanner: {
+    backgroundColor: colors.accentBlue,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  levelUpText: {
+    color: colors.bgDark,
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+  },
   stats: {
     flexDirection: 'row',
     gap: 10,
@@ -204,6 +273,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 8,
   },
+  statHighlight: {
+    backgroundColor: 'rgba(56,189,248,0.25)',
+    borderWidth: 1,
+    borderColor: colors.accentBlue,
+  },
   statLabel: {
     fontSize: 9,
     color: colors.textMuted,
@@ -216,6 +290,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textMain,
     lineHeight: 26,
+  },
+  statValHighlight: {
+    color: colors.accentBlue,
   },
   statSub: {
     fontSize: 14,
