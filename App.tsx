@@ -7,6 +7,7 @@ import {
   StyleSheet,
   StatusBar,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import rawScoringData from './src/scoringData.json';
@@ -455,15 +456,26 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   pickerWrapper: {
-    backgroundColor: colors.inputBg,
+    backgroundColor: colors.bgCard,
     borderWidth: 1,
     borderColor: colors.inputBorder,
     borderRadius: 8,
     overflow: 'hidden',
+    height: 48,
+    justifyContent: 'center',
   },
   picker: {
     color: colors.textMain,
     height: 48,
+    backgroundColor: colors.bgCard,
+    ...Platform.select({
+      web: {
+        borderWidth: 0,
+        outlineWidth: 0,
+        paddingHorizontal: 12,
+        cursor: 'pointer',
+      } as any,
+    }),
   },
   scoreDisplay: {
     alignItems: 'center',
