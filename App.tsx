@@ -461,20 +461,26 @@ const styles = StyleSheet.create({
     borderColor: colors.inputBorder,
     borderRadius: 8,
     overflow: 'hidden',
-    height: 48,
     justifyContent: 'center',
+    ...Platform.select({
+      web: { height: 48 },
+      ios: { height: 48 },
+      android: { height: 56 },
+    }),
   },
   picker: {
     color: colors.textMain,
-    height: 48,
     backgroundColor: colors.bgCard,
     ...Platform.select({
       web: {
+        height: 48,
         borderWidth: 0,
         outlineWidth: 0,
         paddingHorizontal: 12,
         cursor: 'pointer',
       } as any,
+      ios: { height: 48 },
+      android: { height: 56 },
     }),
   },
   scoreDisplay: {
