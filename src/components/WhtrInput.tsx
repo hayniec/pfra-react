@@ -27,7 +27,6 @@ function tierBorderColor(score: number, thresholds: KeyThresholds): string {
 }
 
 export function WhtrInput({ onChange, thresholds, score }: WhtrInputProps) {
-  const [unit, setUnit] = useState<'in' | 'cm'>('in');
   const [heightRaw, setHeightRaw] = useState('');
   const [waistRaw, setWaistRaw] = useState('');
   const [touched, setTouched] = useState(false);
@@ -53,28 +52,15 @@ export function WhtrInput({ onChange, thresholds, score }: WhtrInputProps) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.label}>Waist-to-Height Ratio (20 PTS)</Text>
-        <View style={styles.toggleGroup}>
-          {(['in', 'cm'] as const).map((u) => (
-            <TouchableOpacity
-              key={u}
-              style={[styles.toggleBtn, unit === u && styles.toggleBtnActive]}
-              onPress={() => setUnit(u)}
-            >
-              <Text style={[styles.toggleText, unit === u && styles.toggleTextActive]}>
-                {u}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
       </View>
 
       <View style={styles.inputRow}>
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Height ({unit})</Text>
+          <Text style={styles.inputLabel}>Height (in)</Text>
           <TextInput
             style={styles.input}
             keyboardType="decimal-pad"
-            placeholder={unit === 'in' ? 'e.g. 70' : 'e.g. 178'}
+            placeholder="e.g. 70"
             placeholderTextColor={colors.textMuted}
             value={heightRaw}
             onChangeText={(t) => {
@@ -84,11 +70,11 @@ export function WhtrInput({ onChange, thresholds, score }: WhtrInputProps) {
           />
         </View>
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Waist ({unit})</Text>
+          <Text style={styles.inputLabel}>Waist (in)</Text>
           <TextInput
             style={styles.input}
             keyboardType="decimal-pad"
-            placeholder={unit === 'in' ? 'e.g. 34' : 'e.g. 86'}
+            placeholder="e.g. 34"
             placeholderTextColor={colors.textMuted}
             value={waistRaw}
             onChangeText={(t) => {

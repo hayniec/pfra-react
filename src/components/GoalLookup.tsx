@@ -200,7 +200,11 @@ export function GoalLookup({
             style={[styles.tierBtn, selectedTier === t.score && styles.tierBtnActive]}
             onPress={() => setSelectedTier(t.score)}
           >
-            <Text style={[styles.tierLabel, selectedTier === t.score && styles.tierLabelActive]}>
+            <Text
+              style={[styles.tierLabel, selectedTier === t.score && styles.tierLabelActive]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
               {t.label}
             </Text>
             <Text style={styles.tierScore}>{t.score}</Text>
@@ -579,14 +583,14 @@ const styles = StyleSheet.create({
   },
   tierRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     marginBottom: 16,
   },
   tierBtn: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingHorizontal: 4,
     borderWidth: 1,
     borderColor: colors.inputBorder,
     borderRadius: 8,
