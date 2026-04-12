@@ -668,13 +668,15 @@ const styles = StyleSheet.create({
     flex: 3,
     paddingVertical: 8,
     paddingHorizontal: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    gap: 4,
   },
   eventText: {
     fontSize: 14,
     color: colors.textMain,
+    flexShrink: 1,
   },
   needCol: {
     flex: 2,
